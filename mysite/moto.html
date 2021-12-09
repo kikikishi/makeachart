@@ -1,0 +1,249 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>HTML</title>
+    <link rel='stylesheet' type='text/css' href="{% static 'style.css' %}"/>
+    <script type="text/javascript" src="{% static 'script.js' %}"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://bossanova.uk/jexcel/v4/jexcel.js"></script>
+    <link rel="stylesheet" href="https://bossanova.uk/jexcel/v4/jexcel.css" type="text/css" />
+    <script src="https://bossanova.uk/jsuites/v3/jsuites.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/brython@3.10.0/brython.min.js"> </script>
+    <script src="https://cdn.jsdelivr.net/npm/brython@3.10.0/brython_stdlib.js"> </script>
+    <link rel="stylesheet" href="https://bossanova.uk/jsuites/v3/jsuites.css" type="text/css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <style>
+        /* 表全体 */
+        #spreadsheet{
+            font-size:12px;
+        }
+
+    </style>
+
+    <script>
+        // jExcelオブジェクト変数
+        var jExcelsheetObj = null;
+
+        // 取引先データ
+        var data1=[
+            {"id": "10000001", "name": "data1"},
+            {"id": "10000002", "name": "data2"},
+        ];
+
+        // 商品データ
+        var data2=[
+            {"id": "00000001", "name": "data1"},
+            {"id": "00000002", "name": "data2"},
+        ];
+
+        // 表示データ
+        var sheetData = [
+          { "data1": "0"
+            , "data2": "0"
+          } //１行目
+          ,{"data1": "0"
+             , "data2": "0"
+          } //２行目
+          ,{"data1": "0"
+             , "data2": "0"
+          } //3行目
+        ];
+
+        // ページ読み込み時
+        window.addEventListener("load", function(){
+
+            /**
+            * セルの値が変更された場合
+            * @param instance:編集されたタグのインスタンス(使用していない)
+            * @param cell:編集されたタグの情報(使用していない)
+            * @param x:列のインデックス
+            * @param y:行のインデックス
+            * @param value:編集されたタグの内容(使用していない)
+            */
+            const cellChanged = function(instance, cell, x, y, value) {
+    // 合計処理を実行するカラムインデックス
+                const executeCalcSumDataColomIdx = ["3","4","7"];
+            //
+                beforeChangeExcute();
+            //     // 合計処理を実行するカラム番号の場合
+                if(executeCalcSumDataColomIdx.indexOf(x) >= 0){
+            //
+            //         // 計算データ取得
+                    let calcData = calcSumData(y, x);
+
+                    if(calcData){
+            //             // 計算データ設定
+                        jExcelsheetObj.setRowData(y, calcData);
+                    }
+                }
+                afterChangeExcute();
+            }
+
+            /**
+            * 合計計算ロジック(指定行の合計した数値を計算する)
+            * @param rowIdx:行のインデックス
+            * @param colomIdx:列のインデックス(デフォルト-1のときは、処理実行)
+            */
+            /**
+            * セル変更処理実行処理前ロジック
+            */
+            const beforeChangeExcute = function(){
+
+                // 変更ロジック無効
+                jExcelsheetObj.options.onchange = null;
+                // 読み込み専用の反映
+                jExcelsheetObj.refresh();
+            }
+            /**
+            * 処理変更処理実行処理後ロジック
+            */
+            const afterChangeExcute = function(){
+                // 変更ロジック有効
+                jExcelsheetObj.options.onchange = cellChanged;
+                // 読み込み専用の反映
+                jExcelsheetObj.refresh();
+            }
+
+            // 変換メソッド（もう少し良いやり方が、、
+            const chgStrToInt = function(strNum){
+                return parseInt(strNum.replace(/,/, ''));
+            }
+
+            /** 初期処理開始 */
+            // シートの領域取得
+            var spArea = document.getElementById('spreadsheet');
+
+            // jExcelオブジェクト生成
+            jExcelsheetObj = jexcel(spArea, {
+                data: sheetData, //設定データ
+                minSpareRows: 0, //余り行
+                columns: [
+                    { type: "numeric", title:"data1", width:80, align: "right" ,mask:"#,##" },
+                    { type: "numeric", title:"data2", width:80, align: "right" ,mask:"#,##" },
+                ], //列定義
+                tableOverflow:true,    // trueの場合は、領域以上になるとスクロールを表示
+                tableHeight:'200px',   // 高さ
+                tableWidth:'98vw',     // 幅
+                onchange: cellChanged, // 変更時のロジック
+                allowDeleteColumn: false,       // 列削除ＮＧ
+                allowInsertColumn: false,       // 列追加ＮＧ
+                allowManualInsertColumn: false, // 列追加ＮＧ
+                allowRenameColumn: false,       // 列名変更
+            });
+
+            /** 初回データの計算ロジック */
+            // 変更前メソッドを実行
+            beforeChangeExcute();
+            // // データ(行)数取得
+            let allDataRows = jExcelsheetObj.rows.length;
+            // // 変更後メソッドを有効にする
+            afterChangeExcute();
+            //
+            // // ヘッダーの中央寄せ
+            var spHeaders = document.querySelectorAll("#spreadsheet thead.resizable td");
+            for(let idx = 0; idx<spHeaders.length;idx++){
+                spHeaders[idx].style.textAlign="center";
+            }
+
+
+
+        });
+    </script>
+
+  </head>
+
+  <body>
+
+      <span>文字を入力した後にボタンを押してください</span>
+      <br>
+      <input type="text" size="50" id="input_form" placeholder="x_label">
+      <input type="text" size="50" id="input_form2" placeholder="y_label">
+      <input type="text" size="50" id="input_form3" placeholder="x_unit">
+      <input type="text" size="50" id="input_form4" placeholder="y_unit">
+      <h1>散布図</h1>
+      <div id="spreadsheet"></div>
+
+      <button type="button" onclick="clickBtn()">グラフ作成</button>
+      <script>
+
+        function clickBtn() {
+          let table = document.getElementsByClassName('jexcel');
+          var tab = table[0]
+          var rowlen = tab.rows.length;
+          var celllen = tab.rows[1].cells.length;
+
+      // 多次元配列にする
+          let tbl = [];
+          for (let i = 1; i < rowlen; i++) {
+              tbl[i] = [];
+              for(let j = 1; j < 3; j++){
+                tbl[i][j] = tab.rows[i].cells[j].innerText
+              }
+          }
+          console.log(tbl);
+
+          let tl = [];
+          for (let i = 0; i < rowlen; i++){
+              tl[i] = [];
+              for (let j = 0; j <3; j++){
+                tl[i][j] = tbl[i+1][j+1]
+              }
+          }
+
+
+          var txt = document.getElementById("input_form").value;
+          var txt2 = document.getElementById("input_form2").value;
+          var txt3 = document.getElementById("input_form3").value;
+          var txt4 = document.getElementById("input_form4").value;
+          var table1 = tbl;
+
+          $.ajax({
+            url: "{% url 'app_folder:call_write_data' %}",
+            method: 'GET',
+            data: {"input_data": txt,"input_data2": txt2,"input_data3": txt3,"input_data4": txt4,"input_data5": table1},
+            dataType: "text",
+            contentType: "application/json",
+            beforeSend: function(xhr, settings) {
+              if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrf_token);
+              }
+            },
+            error: function(xhr, status, error) {
+              console.log("error")
+            }
+          })
+          .done(function(data) {
+            console.log("Success");
+            console.log(data);
+          });
+
+          // csrf_tokenの取得に使う
+          function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+              var cookies = document.cookie.split(';');
+              for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+                }
+              }
+            }
+            return cookieValue;
+          }
+
+          // ヘッダにcsrf_tokenを付与する関数
+          function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+          };
+        }
+
+      </script>
+  </body>
+</html>
